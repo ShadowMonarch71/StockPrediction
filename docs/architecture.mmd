@@ -1,0 +1,39 @@
+flowchart LR
+  %% Project flow for the Simple Strategy (C++)
+  subgraph Source [Source code]
+    CSV[CSVLoader] --> Bars["Bars: Date,Open,High,Low,Close,Volume"]
+    Indicators["Indicators: SMA, EMA, RSI, MACD"] --> Strategy["RuleBasedStrategy (EMA > SMA => signal)"]
+    Bars --> Indicators
+    Bars --> Backtester[Backtester]
+    Strategy --> Signals["Signals (0/1)"]
+  end
+
+  Bars --> Backtester
+  Signals --> Backtester
+
+  Backtester --> Trades["Trades list"]
+  Backtester --> Equity["Equity curve"]
+
+  Trades --> OutConsole["Console summary & trade prints"]
+  Equity --> OutConsole
+  Trades --> OutCSV["out/trades.csv"]
+  Equity --> OutCSV2["out/equity.csv"]
+
+  Backtester --> Metrics["Metrics: Final equity, MaxDD, Wins"]
+  Metrics --> OutConsole
+
+  subgraph Tests [Unit tests]
+    IndicatorTests["Indicator tests"] --> Indicators
+  end
+
+  subgraph Dev [Dev tools & CI]
+  Build["build.ps1 / g++ / CMake"] --> Compile["Compile & Link"]
+  Compile --> Binary["build/strategy.exe"]
+  Git["Git & GitHub repo"] --> CI["GitHub Actions CI"]
+  CI --> Compile
+  Binary --> Run["Run CLI"]
+  Run --> OutConsole
+  end
+
+  classDef infra fill:#f3f4f6,stroke:#bbb,stroke-width:1px;
+  class Dev infra;
