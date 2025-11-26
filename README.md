@@ -15,7 +15,7 @@ Build & run (using g++ / MinGW or a POSIX shell):
 mkdir build; cd build
 cmake ..
 cmake --build .
-.\build\strategy.exe ..\data\sample.csv 50 20
+.\build\strategy.exe .\data\ohlcv_100_days_style.csv 10 7
 ```
 
 Repository
