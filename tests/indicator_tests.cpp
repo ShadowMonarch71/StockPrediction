@@ -3,6 +3,11 @@
 #include <vector>
 #include <cmath>
 
+using namespace sp;
+#include <iostream>
+#include <vector>
+#include <cmath>
+
 bool approx_eq(double a, double b, double tol=1e-8) {
     return std::fabs(a-b) <= tol;
 }

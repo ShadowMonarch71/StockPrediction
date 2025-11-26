@@ -2,7 +2,11 @@
 #include <string>
 #include <vector>
 
-struct Bar { std::string date; double open, high, low, close; double volume; };
+namespace sp {
+
+struct Bar {
+     std::string date; double open, high, low, close; double volume;
+     };
 
 class CSVLoader {
 public:
@@ -11,3 +15,5 @@ public:
 private:
     std::string path_;
 };
+
+} // namespace sp

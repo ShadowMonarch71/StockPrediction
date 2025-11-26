@@ -37,6 +37,9 @@
 #include <sstream>
 #include <stdexcept>
 
+using namespace sp;
+using std::getline;
+
 // Construct with the path to the CSV file to be loaded.
 CSVLoader::CSVLoader(const std::string &path) : path_(path) {}
 
@@ -52,14 +55,14 @@ std::vector<Bar> CSVLoader::load() {
     std::string line;
 
     // Read header line. We expect a header and perform a minimal validation.
-    if (!std::getline(in, line)) return rows; // empty file -> return empty vector
+    if (!getline(in, line)) return rows; // empty file -> return empty vector
 
     // Minimal header validation: ensure the header contains the word "Date".
     // This guards against accidentally feeding a wrong file, but is intentionally lightweight.
     if (line.find("Date") == std::string::npos) throw std::runtime_error("CSV header must contain 'Date'");
 
     // Read data lines
-    while (std::getline(in, line)) {
+    while (getline(in, line)) {
         if (line.empty()) continue; // skip blank lines
 
         // Parse comma-separated tokens using a stringstream. This simple approach
@@ -70,14 +73,14 @@ std::vector<Bar> CSVLoader::load() {
         Bar b{}; // zero-initialized Bar
 
         // Expected order: Date,Open,High,Low,Close,Volume
-        std::getline(ss, b.date, ',');
+        getline(ss, b.date, ',');
 
         // Parse numeric fields; std::stod will throw if the token is not a valid number.
-        std::getline(ss, tok, ','); b.open = std::stod(tok);
-        std::getline(ss, tok, ','); b.high = std::stod(tok);
-        std::getline(ss, tok, ','); b.low = std::stod(tok);
-        std::getline(ss, tok, ','); b.close = std::stod(tok);
-        std::getline(ss, tok, ','); b.volume = std::stod(tok);
+        getline(ss, tok, ','); b.open = std::stod(tok);
+        getline(ss, tok, ','); b.high = std::stod(tok);
+        getline(ss, tok, ','); b.low = std::stod(tok);
+        getline(ss, tok, ','); b.close = std::stod(tok);
+        getline(ss, tok, ','); b.volume = std::stod(tok);
 
         rows.push_back(b);
     }

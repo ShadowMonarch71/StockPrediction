@@ -40,6 +40,8 @@
 #include <cmath>
 #include <numeric>
 
+using namespace sp;
+
 // Simple Moving Average (SMA)
 // Returns a vector where out[i] is the average of the previous `period_` values
 // ending at index i. For indices with insufficient history, out[i] is NaN.

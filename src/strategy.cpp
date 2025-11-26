@@ -35,6 +35,8 @@
 #include "indicator.h"
 #include <cmath>
 
+using namespace sp;
+
 RuleBasedStrategy::RuleBasedStrategy(std::shared_ptr<Indicator> shortEma, std::shared_ptr<Indicator> longSma)
     : shortEma_(shortEma), longSma_(longSma) {}
 

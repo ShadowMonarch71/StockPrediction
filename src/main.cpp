@@ -36,6 +36,8 @@
 #include <iostream>
 #include <memory>
 
+using namespace sp;
+
 int main(int argc, char *argv[]) {
 
     // Basic usage check: require at least CSV path
@@ -75,6 +77,14 @@ int main(int argc, char *argv[]) {
         // Generate a list of signals corresponding to each data point
         // Signals are derived by comparing indicator values
         auto signals = strat.generate_signals(bars);
+
+        // Debug: print signals to see the pattern
+        std::cout << "Signal pattern:\n";
+        for (size_t i = 0; i < signals.size(); ++i) {
+            std::cout << bars[i].date << " close=" << bars[i].close 
+                      << " signal=" << signals[i] << "\n";
+        }
+        std::cout << "\n";
 
         // Initialize the backtester
         // Parameters: slippage = 0.0005 (0.05%), cost = 0.0

@@ -28,6 +28,9 @@
  */
 
 #include "backtester.h"
+#include <iostream>
+
+using namespace sp;
 
 Backtester::Backtester(double slippage, double cost) : slippage_(slippage), cost_(cost) {}
 

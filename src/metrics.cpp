@@ -26,6 +26,8 @@
 #include "metrics.h"
 #include <algorithm>
 
+namespace sp {
+
 Metrics compute_metrics(const std::vector<double>& equity, const std::vector<Trade>& trades) {
     Metrics m;
 
@@ -50,3 +52,5 @@ Metrics compute_metrics(const std::vector<double>& equity, const std::vector<Tra
     for (auto &t : trades) if (t.pnl > 0) m.wins++;
     return m;
 }
+
+} // namespace sp
