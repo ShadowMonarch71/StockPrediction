@@ -1,39 +1,55 @@
-flowchart LR
-  %% Project flow for the Simple Strategy (C++)
-  subgraph Source [Source code]
-    CSV[CSVLoader] --> Bars["Bars: Date,Open,High,Low,Close,Volume"]
-    Indicators["Indicators: SMA, EMA, RSI, MACD"] --> Strategy["RuleBasedStrategy (EMA > SMA => signal)"]
-    Bars --> Indicators
-    Bars --> Backtester[Backtester]
-    Strategy --> Signals["Signals (0/1)"]
+flowchart TB
+  %% Updated architecture with ML prediction capabilities (predictor-only)
+
+  subgraph Input [Data Input]
+    CSV[CSV Loader<br/>OHLCV Data]
+    Bars[Historical Bars<br/>Date,Open,High,Low,Close,Volume]
   end
 
-  Bars --> Backtester
-  Signals --> Backtester
+  CSV --> Bars
 
-  Backtester --> Trades["Trades list"]
-  Backtester --> Equity["Equity curve"]
-
-  Trades --> OutConsole["Console summary & trade prints"]
-  Equity --> OutConsole
-  Trades --> OutCSV["out/trades.csv"]
-  Equity --> OutCSV2["out/equity.csv"]
-
-  Backtester --> Metrics["Metrics: Final equity, MaxDD, Wins"]
-  Metrics --> OutConsole
-
-  subgraph Tests [Unit tests]
-    IndicatorTests["Indicator tests"] --> Indicators
+  subgraph Processing [Data Processing]
+    Indicators[Technical Indicators<br/>SMA, EMA, RSI, MACD]
+    Features[Feature Engineering<br/>16 predictive features]
   end
 
-  subgraph Dev [Dev tools & CI]
-  Build["build.ps1 / g++ / CMake"] --> Compile["Compile & Link"]
-  Compile --> Binary["build/strategy.exe"]
-  Git["Git & GitHub repo"] --> CI["GitHub Actions CI"]
-  CI --> Compile
-  Binary --> Run["Run CLI"]
-  Run --> OutConsole
+  Bars --> Indicators
+  Bars --> Features
+
+  subgraph ML [Machine Learning]
+    FeatureMatrix[Feature Matrix<br/>Returns, Lags, Indicators]
+    TrainTest[Train/Test Split<br/>80% / 20%]
+    LinReg[Linear Regression<br/>y = β₀ + Σ βᵢxᵢ]
+    ModelEval[Model Evaluation<br/>MSE, RMSE, R²]
   end
 
-  classDef infra fill:#f3f4f6,stroke:#bbb,stroke-width:1px;
-  class Dev infra;
+  Features --> FeatureMatrix
+  FeatureMatrix --> TrainTest
+  TrainTest --> LinReg
+  LinReg --> ModelEval
+
+  %% Predictor outputs only
+  subgraph Output [Outputs]
+    PredOut[Price Predictions<br/>Future Forecasts]
+    Accuracy[Accuracy Metrics<br/>Model Performance]
+    Console[Console Output]
+  end
+
+  ModelEval --> PredOut
+  ModelEval --> Accuracy
+  PredOut --> Console
+  Accuracy --> Console
+
+  subgraph Executables [Build Outputs]
+    PredExe[predictor.exe<br/>ML Price Predictor]
+    PredTests[predictor_tests.exe<br/>ML Unit Tests]
+  end
+
+  LinReg -. builds .-> PredExe
+  LinReg -. tests .-> PredTests
+
+  classDef new fill:#10b981,stroke:#059669,color:#fff,stroke-width:2px;
+  classDef output fill:#f59e0b,stroke:#d97706,color:#fff,stroke-width:2px;
+
+  class ML,Features,FeatureMatrix,LinReg,ModelEval,PredOut,Accuracy,PredExe,PredTests new;
+  class Output,Console output;
