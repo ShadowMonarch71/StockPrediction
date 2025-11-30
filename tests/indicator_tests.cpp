@@ -14,18 +14,15 @@ bool approx_eq(double a, double b, double tol=1e-8) {
 
 int main(){
     std::vector<double> prices = {1,2,3,4,5,6,7,8,9,10};
-    // Test SMA(3): last value should be average of last 3 = 8+9+10 /3 = 9
     SMAIndicator sma3(3);
     auto s = sma3.compute(prices);
     if (s.size()!=prices.size()){ std::cerr<<"SMA size mismatch\n"; return 1; }
     if (!approx_eq(s.back(), 9.0, 1e-9)) { std::cerr<<"SMA last value expected 9 got "<<s.back()<<"\n"; return 2; }
 
-    // Test EMA basic properties: first equals first price
     EMAIndicator ema3(3);
     auto e = ema3.compute(prices);
     if (!approx_eq(e.front(), prices.front())) { std::cerr<<"EMA seed mismatch\n"; return 3; }
 
-    // Test RSI produces values in [0,100] where defined
     RSIIndicator rsi5(5);
     auto r = rsi5.compute(prices);
     for (size_t i=0;i<r.size();++i) {
@@ -34,7 +31,6 @@ int main(){
         }
     }
 
-    // Test MACD equals difference of EMAs
     MACDIndicator macd(3,6);
     auto mac = macd.compute(prices);
     EMAIndicator fast(3); EMAIndicator slow(6);

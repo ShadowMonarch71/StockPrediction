@@ -1,3 +1,5 @@
+// builds feature vectors from price history for training
+
 #include "feature_engineer.h"
 #include <cmath>
 #include <algorithm>
@@ -6,29 +8,26 @@
 namespace sp {
 using namespace std;
 
-FeatureEngineer::FeatureEngineer() : config_() {}//constructor with default config
+FeatureEngineer::FeatureEngineer() : config_() {}
 
 FeatureEngineer::FeatureEngineer(const FeatureConfig& config) : config_(config) {}
 
 pair<vector<vector<double>>, vector<double>>
 FeatureEngineer::create_features(const vector<Bar>& bars, int prediction_horizon) {
-    
     if (bars.size() < static_cast<size_t>(config_.lag_days + prediction_horizon + 50)) {
-        // Need enough data for features and prediction
         return {{}, {}};
     }
-    
     vector<vector<double>> features;
     vector<double> targets;
     
-    // Pre-compute indicators for efficiency
+    // extract closing prices for indicator calculations
     vector<double> closes;
     closes.reserve(bars.size());
     for (const auto& bar : bars) {
         closes.push_back(bar.close);
     }
     
-    // Compute technical indicators once
+    // precompute all indicators once
     vector<double> sma_values, ema_values, rsi_values;
     if (config_.use_sma) {
         SMAIndicator sma(config_.sma_period);
@@ -43,15 +42,15 @@ FeatureEngineer::create_features(const vector<Bar>& bars, int prediction_horizon
         rsi_values = rsi.compute(closes);
     }
     
-    // Create features and targets
-    // Start from a point where we have enough history
+    // skip early days where we don't have enough history
     size_t start_idx = max(config_.lag_days, 50);
     size_t end_idx = bars.size() - prediction_horizon;
     
+    // build feature vector for each day
     for (size_t i = start_idx; i < end_idx; ++i) {
         vector<double> feature_vec;
         
-        // 1. Price returns (last N days)
+        // add price returns for last N days
         if (config_.use_returns) {
             for (int lag = 1; lag <= config_.lag_days; ++lag) {
                 double ret = (bars[i].close - bars[i - lag].close) / bars[i - lag].close;
@@ -59,7 +58,7 @@ FeatureEngineer::create_features(const vector<Bar>& bars, int prediction_horizon
             }
         }
         
-        // 2. Lagged prices (normalized by current price)
+        // add historical prices normalized by current price
         if (config_.use_lagged_prices) {
             for (int lag = 1; lag <= config_.lag_days; ++lag) {
                 double normalized = bars[i - lag].close / bars[i].close;
@@ -67,28 +66,25 @@ FeatureEngineer::create_features(const vector<Bar>& bars, int prediction_horizon
             }
         }
         
-        // 3. Technical indicators
+        // add technical indicators
         if (config_.use_sma && !isnan(sma_values[i])) {
-            feature_vec.push_back(sma_values[i] / bars[i].close);  // Normalized
+            feature_vec.push_back(sma_values[i] / bars[i].close);
         }
         if (config_.use_ema && !isnan(ema_values[i])) {
-            feature_vec.push_back(ema_values[i] / bars[i].close);  // Normalized
+            feature_vec.push_back(ema_values[i] / bars[i].close);
         }
         if (config_.use_rsi && !isnan(rsi_values[i])) {
-            feature_vec.push_back(rsi_values[i] / 100.0);  // Normalize to [0,1]
+            feature_vec.push_back(rsi_values[i] / 100.0);
         }
         
-        // 4. Volume features
+        // add volume features
         if (config_.use_volume) {
-            // Volume change
             if (i > 0 && bars[i - 1].volume > 0) {
                 double vol_change = (bars[i].volume - bars[i - 1].volume) / bars[i - 1].volume;
                 feature_vec.push_back(vol_change);
             } else {
                 feature_vec.push_back(0.0);
             }
-            
-            // Average volume ratio (current / 5-day average)
             double avg_vol = 0.0;
             for (int lag = 1; lag <= 5 && i >= static_cast<size_t>(lag); ++lag) {
                 avg_vol += bars[i - lag].volume;
@@ -101,7 +97,7 @@ FeatureEngineer::create_features(const vector<Bar>& bars, int prediction_horizon
             }
         }
         
-        // 5. Volatility (5-day rolling std of returns)
+        // calculate 5-day volatility
         vector<double> recent_returns;
         for (int lag = 1; lag <= 5 && i >= static_cast<size_t>(lag); ++lag) {
             double ret = (bars[i - lag + 1].close - bars[i - lag].close) / bars[i - lag].close;
@@ -118,21 +114,18 @@ FeatureEngineer::create_features(const vector<Bar>& bars, int prediction_horizon
             feature_vec.push_back(std::sqrt(variance));
         }
         
-        // Target: future price (price at i + prediction_horizon)
         double target_price = bars[i + prediction_horizon].close;
         
-        // Skip if we have NaN values
+        // skip if any feature is NaN
         bool has_nan = false;
         for (double val : feature_vec) {
             if (isnan(val)) { has_nan = true; break; }
         }
-        
         if (!has_nan) {
             features.push_back(feature_vec);
             targets.push_back(target_price);
         }
     }
-    
     return {features, targets};
 }
 

@@ -1,35 +1,65 @@
 param(
-    [switch]$Run
+    [switch]$Run,
+    [ValidateSet('Debug','Release')]
+    [string]$Config = 'Release'
 )
 
-# Simple build helper for the project. Uses g++ (MinGW/MSYS2) on PATH.
-# Usage:
-#   ./build.ps1        # builds build\strategy.exe
-#   ./build.ps1 -Run   # builds then runs the exe with default sample CSV
+# Build helper for predictor-only project.
+# Prefers CMake/MSVC on Windows; falls back to g++ if available.
 
 Set-StrictMode -Version Latest
 
-$srcDir = Join-Path $PSScriptRoot 'src'
-$outDir = Join-Path $PSScriptRoot 'build'
-if (-not (Test-Path $outDir)) { New-Item -ItemType Directory $outDir | Out-Null }
+$rootDir = $PSScriptRoot
+$srcDir  = Join-Path $rootDir 'src'
+$buildDir = Join-Path $rootDir 'build'
+if (-not (Test-Path $buildDir)) { New-Item -ItemType Directory $buildDir | Out-Null }
 
-$g = Get-Command g++ -ErrorAction SilentlyContinue
-if (-not $g) { Write-Error "g++ not found on PATH. Install MSYS2 or MinGW-w64 and add g++ to PATH."; exit 1 }
+$cmake = Get-Command cmake -ErrorAction SilentlyContinue
+if ($cmake) {
+    Write-Host "Configuring with CMake..."
+    & cmake -S $rootDir -B $buildDir
+    if ($LASTEXITCODE -ne 0) { Write-Error "CMake configure failed."; exit $LASTEXITCODE }
 
-$sources = Get-ChildItem -Path $srcDir -Filter '*.cpp' | ForEach-Object { $_.FullName }
-if ($sources.Count -eq 0) { Write-Error "No source files found in $srcDir"; exit 1 }
+    Write-Host "Building with CMake ($Config)..."
+    & cmake --build $buildDir --config $Config
+    if ($LASTEXITCODE -ne 0) { Write-Error "CMake build failed."; exit $LASTEXITCODE }
 
-$outExe = Join-Path $outDir 'strategy.exe'
+    $outExe = Join-Path $buildDir (Join-Path $Config 'predictor.exe')
+    if (-not (Test-Path $outExe)) { Write-Error "predictor.exe not found after build."; exit 1 }
+    Write-Host ("Built: " + $outExe)
 
-Write-Host ('Compiling: ' + ($sources -join ' '))
+    if ($Run.IsPresent) {
+        $csv = Join-Path $rootDir 'data\stock_data.csv'
+        if (-not (Test-Path $csv)) { Write-Error ("CSV not found: " + $csv); exit 1 }
+        Write-Host ("Running: " + $outExe + " " + $csv + " 1 0.8")
+        & $outExe $csv 1 0.8
+    }
+    exit 0
+}
+
+# Fallback: build with g++ if CMake is not available
+$gpp = Get-Command g++ -ErrorAction SilentlyContinue
+if (-not $gpp) { Write-Error "Neither CMake nor g++ found on PATH."; exit 1 }
+
+# Explicitly compile only predictor sources (exclude legacy backtester files)
+$sources = @(
+    Join-Path $srcDir 'predictor.cpp'
+    Join-Path $srcDir 'csv_loader.cpp'
+    Join-Path $srcDir 'indicator.cpp'
+    Join-Path $srcDir 'feature_engineer.cpp'
+    Join-Path $srcDir 'linear_regression.cpp'
+)
+
+$outExe = Join-Path $buildDir 'predictor.exe'
+Write-Host ('Compiling with g++: ' + ($sources -join ' '))
 & g++ -std=c++17 -O2 $sources -o $outExe
 if ($LASTEXITCODE -ne 0) { Write-Error ("Build failed (g++ exit code " + $LASTEXITCODE + ")"); exit $LASTEXITCODE }
 
 Write-Host ("Built: " + $outExe)
 
 if ($Run.IsPresent) {
-    $csv = Join-Path $PSScriptRoot 'data\sample.csv'
-    if (-not (Test-Path $csv)) { Write-Error ("Sample CSV not found: " + $csv); exit 1 }
-    Write-Host ("Running: " + $outExe + " " + $csv + " 5 3")
-    & $outExe $csv 5 3
+    $csv = Join-Path $rootDir 'data\stock_data.csv'
+    if (-not (Test-Path $csv)) { Write-Error ("CSV not found: " + $csv); exit 1 }
+    Write-Host ("Running: " + $outExe + " " + $csv + " 1 0.8")
+    & $outExe $csv 1 0.8
 }

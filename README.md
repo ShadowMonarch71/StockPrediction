@@ -4,20 +4,56 @@ This repository contains a lightweight, educational C++17 implementation of a st
 
 ## Features
 
-- Linear regression model (ordinary least squares)
-- 16 predictive features (returns, lagged prices, SMA/EMA/RSI, volume stats, volatility)
-- Train/test split with evaluation metrics (MSE, RMSE, R²)
-- Simple CSV ingestion for OHLCV data (Date,Open,High,Low,Close,Volume)
+- **Linear Regression Model**: Ordinary least squares implementation
+- **16 Predictive Features**: Returns, lagged prices, SMA/EMA/RSI, volume stats, volatility
+- **Train/Test Split**: Evaluation metrics (MSE, RMSE, R²)
+- **CSV Ingestion**: Simple OHLCV data format (Date,Open,High,Low,Close,Volume)
 
 ## Quick Start
 
-### Build
-
 ```powershell
-mkdir build; cd build
+mkdir build
+cd build
 cmake ..
-cmake --build .
-.\build\strategy.exe ..\data\sample.csv 50 20
+cmake --build . --config Release
+cd ..
+.\build\Release\predictor.exe data\stock_data.csv 1 0.8
+```
+
+## Output Files
+
+After running predictions, you'll find in the `output/` directory:
+
+**Data Files:**
+- `predictions.csv` - All test predictions with actual vs predicted values
+- `metrics.txt` - Model performance metrics
+
+## Requirements
+
+- CMake 3.10+
+- C++17 compatible compiler
+- Visual Studio 2022 (Windows) or GCC/Clang (Linux/Mac)
+
+## Documentation
+
+- **[Quick Reference](markdownFiles/QUICK_REFERENCE.md)** - API and usage reference
+- **[Implementation Summary](markdownFiles/IMPLEMENTATION_SUMMARY.md)** - Technical details
+
+## Usage Examples
+
+### Basic Prediction
+```powershell
+.\build\Release\predictor.exe data\stock_data.csv
+```
+
+### Multi-day Prediction
+```powershell
+.\build\Release\predictor.exe data\stock_data.csv 5
+```
+
+### Custom Train/Test Split
+```powershell
+.\build\Release\predictor.exe data\stock_data.csv 1 0.85
 ```
 
 Repository
