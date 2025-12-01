@@ -191,4 +191,4 @@ vector<vector<double>> LinearRegression::inverse(
     return result;
 }
 
-} // namespace sp
+} 
